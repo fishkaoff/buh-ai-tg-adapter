@@ -1,0 +1,64 @@
+version: '3'
+
+# Переменные окружения из .env доступны в задачах (например, в run).
+# Файл .env игнорируется, если его нет.
+dotenv: ['.env']
+
+env:
+  CGO_ENABLED: '0'
+
+vars:
+  BIN_NAME: buh-ai-tg-adapter
+  BIN_DIR: bin
+
+tasks:
+  default:
+    desc: Сборка и тесты
+    cmds:
+      - task: build
+      - task: test
+
+  build:
+    desc: Сборка бинарника
+    cmds:
+      - go build -trimpath -ldflags="-s -w" -o {{.BIN_DIR}}/{{.BIN_NAME}} ./cmd/bot
+    sources:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+    generates:
+      - '{{.BIN_DIR}}/{{.BIN_NAME}}'
+
+  run:
+    desc: Запуск бота (берёт TELEGRAM_BOT_TOKEN и др. из .env)
+    dir: '.'
+    cmds:
+      - go run ./cmd/bot
+
+  test:
+    desc: Тесты
+    cmds:
+      - go test -race ./...
+
+  fmt:
+    desc: Форматирование кода
+    cmds:
+      - gofmt -w -s .
+
+  vet:
+    desc: go vet
+    cmds:
+      - go vet ./...
+
+  check:
+    desc: Полная проверка (fmt, vet, тесты)
+    cmds:
+      - task: fmt
+      - task: vet
+      - task: test
+
+  clean:
+    desc: Удалить собранные артефакты
+    cmds:
+      - rm -rf {{.BIN_DIR}}
+    silent: true
